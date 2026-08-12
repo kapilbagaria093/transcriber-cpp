@@ -5,8 +5,22 @@
 #include "whisper.h"
 #include "common-whisper.h"
 
+extern "C" {
+    #include "wn.h"
+}
+
+// for setting env variables related to wordnet
+#include <cstdlib>
+
 int main()
 {
+    // wordnet env variable
+    setenv(
+        "WNSEARCHDIR",
+        "third_party/wordnet/dict",
+        1
+    );
+
     const std::string audioPath =
         "audio/test.wav";
 
@@ -128,7 +142,7 @@ int main()
     // 7. Cleanup
     whisper_free(ctx);
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 //Glad to see things are going well and business is starting to pick up. Andrea told me about your outstanding numbers on Tuesday. Keep up the good work. Now to other business, I am going to suggest a payment schedule for the outstanding monies that is due. One, can you pay the balance of the license agreement as soon as possible? Two, I suggest we setup or you suggest, what you can pay on the back royalties, would you feel comfortable with paying every two weeks? Every month, I will like to catch up and maintain current royalties. So, if we can start the current royalties and maintain them every two weeks as all stores are required to do, I would appreciate it. Let me know if this works for you.
