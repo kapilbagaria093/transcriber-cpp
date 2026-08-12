@@ -1,3 +1,130 @@
 .vscode/
 build/
 *.bin
+
+# =========================
+# Build / CMake
+# =========================
+
+build/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+compile_commands.json
+CTestTestfile.cmake
+install_manifest.txt
+
+
+# =========================
+# Compiled binaries
+# =========================
+
+*.o
+*.obj
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+
+# Project-specific test/build binaries
+wordnet_test
+test
+
+
+# =========================
+# WordNet build artifacts
+# =========================
+
+third_party/wordnet/lib/*.o
+third_party/wordnet/lib/libwn.a
+
+
+# =========================
+# Whisper.cpp build artifacts
+# =========================
+
+third_party/whisper.cpp/build/
+third_party/whisper.cpp/*.o
+third_party/whisper.cpp/*.a
+third_party/whisper.cpp/*.dylib
+third_party/whisper.cpp/*.so
+
+
+# =========================
+# ML / model files
+# =========================
+
+# Whisper models
+models/*.bin
+models/*.gguf
+models/*.ggml
+
+# Other potentially large model files
+*.onnx
+*.pt
+*.pth
+*.safetensors
+
+
+# =========================
+# Audio files
+# =========================
+
+audio/*.wav
+audio/*.mp3
+audio/*.m4a
+audio/*.flac
+audio/*.ogg
+audio/*.aac
+
+
+# =========================
+# Temporary / generated files
+# =========================
+
+*.tmp
+*.temp
+*.log
+*.out
+*.swp
+*.swo
+.DS_Store
+
+
+# =========================
+# macOS
+# =========================
+
+.AppleDouble
+.LSOverride
+._*
+
+
+# =========================
+# VS Code
+# =========================
+
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+
+# =========================
+# WordNet archive
+# =========================
+
+third_party/WordNet-*.tar.gz
+
+
+# =========================
+# Environment / secrets
+# =========================
+
+.env
+.env.*
+!.env.example
