@@ -6,6 +6,11 @@
 #include "whisper.h"
 #include "common-whisper.h"
 
+// tagging
+#include <cstdio>
+#include <fstream>
+#include <sstream>
+
 extern "C" {
     #include "wn.h"
 }
@@ -15,6 +20,16 @@ extern "C" {
 
 // globals
 
+
+// structs
+struct Token {
+    std::string word;
+    std::string spacyTag;
+    std::string lemma;
+};
+
+// declarations
+std::vector<Token> posTag(const std::string& sentence);
 
 int main()
 {
@@ -146,6 +161,20 @@ int main()
     // 7. Cleanup
     whisper_free(ctx);
 
+    // testing posTag
+    std::string sentenceSample =
+        "The woman is going deaf.";
+
+    auto tokens = posTag(sentenceSample);
+
+    for (const auto& token : tokens)
+    {
+        std::cout
+            << token.word << "\t"
+            << token.spacyTag << "\t"
+            << token.lemma << "\n";
+    }
+
     return EXIT_SUCCESS;
 }
 
@@ -171,7 +200,86 @@ bool isEliminator(const std::string& word) {
     return eliminators.count(word) > 0;
 };
 
-void preProcess(std::string& sentence) {
-    // i hv a sentence
+// sentence wise preprocessing
+// void preProcess(std::string& sentence) {
+//     std::vector<std::string> words;
+//     std::string word;
+//     for (char c : sentence) {
+//         if (c == ' ' || c == '.') {
+//             words.push_back(word);
+//             word.clear();
+//         }
+//         word += c;
+//     };
 
+//     // all words in array
+//     for (int i=0; i<words.size(); i++) {
+//         // check eliminators
+//         if (isEliminator(words[i])) {
+//             words[i] = "";
+//         };
+//     };
+// }
+
+// SENTENCE-WISE PREPROCESSING 
+int sentencePreProcessing(const std::string& sentence) {
+
+
+    return EXIT_SUCCESS;
+}
+
+std::vector<Token> posTag(const std::string& sentence)
+{
+    // Temporary file containing the sentence
+    const std::string inputFile = "pos_input.txt";
+
+    {
+        std::ofstream file(inputFile);
+
+        if (!file) {
+            std::cerr << "Failed to create POS input file\n";
+            return {};
+        }
+
+        file << sentence;
+    }
+
+    // Run Python + spaCy
+    const std::string command =
+        ".venv/bin/python3 pos_tagger.py " + inputFile;
+
+    FILE* pipe = popen(command.c_str(), "r");
+
+    if (!pipe) {
+        std::cerr << "Failed to start spaCy POS tagger\n";
+        return {};
+    }
+
+    std::vector<Token> tokens;
+
+    char buffer[1024];
+
+    while (fgets(buffer, sizeof(buffer), pipe))
+    {
+        std::stringstream ss(buffer);
+
+        Token token;
+
+        std::getline(ss, token.word, '\t');
+        std::getline(ss, token.spacyTag, '\t');
+        std::getline(ss, token.lemma, '\t');
+
+        if (!token.word.empty()) {
+            tokens.push_back(token);
+        }
+    }
+
+    int status = pclose(pipe);
+
+    if (status != 0) {
+        std::cerr << "spaCy POS tagger failed\n";
+        return {};
+    }
+
+    return tokens;
 }
