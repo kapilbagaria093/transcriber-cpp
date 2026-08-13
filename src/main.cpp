@@ -28,8 +28,16 @@ struct Token {
     std::string lemma;
 };
 
+struct NormalisedToken {
+    std::string word;
+    std::string tag; // tag as per ISL
+    std::string lemma;
+};
+
 // declarations
+int sentencePreProcessing(const std::string& sentence);
 std::vector<Token> posTag(const std::string& sentence);
+std::vector<NormalisedToken> normaliseTokensVector(const std::vector<Token>& tokensVector);
 
 int main()
 {
@@ -161,19 +169,10 @@ int main()
     // 7. Cleanup
     whisper_free(ctx);
 
-    // testing posTag
-    std::string sentenceSample =
-        "The woman is going deaf.";
+    // testing sentence preprocessing
+    std::string testSentence = "this is a sentence.";
+    sentencePreProcessing(testSentence);
 
-    auto tokens = posTag(sentenceSample);
-
-    for (const auto& token : tokens)
-    {
-        std::cout
-            << token.word << "\t"
-            << token.spacyTag << "\t"
-            << token.lemma << "\n";
-    }
 
     return EXIT_SUCCESS;
 }
@@ -223,7 +222,18 @@ bool isEliminator(const std::string& word) {
 
 // SENTENCE-WISE PREPROCESSING 
 int sentencePreProcessing(const std::string& sentence) {
+    auto tokensVector = posTag(sentence);
 
+    for (const auto& token : tokensVector)
+    {
+        std::cout
+            << token.word << "\t"
+            << token.spacyTag << "\t"
+            << token.lemma << "\n";
+    };
+
+    auto normalisedTokens = normaliseTokensVector(tokensVector);
+    
 
     return EXIT_SUCCESS;
 }
@@ -283,3 +293,120 @@ std::vector<Token> posTag(const std::string& sentence)
 
     return tokens;
 }
+
+std::vector<NormalisedToken> normaliseTokensVector(const std::vector<Token>& tokensVector) 
+{
+    std::vector<NormalisedToken> normalisedTokens;
+
+    for (const auto& token : tokensVector) {
+
+        NormalisedToken normalisedToken;
+
+        normalisedToken.word = token.word;
+        normalisedToken.lemma = token.lemma;
+
+        const auto& spacyTag = token.spacyTag;
+
+        // Determiner
+        if (spacyTag == "DT") {
+            normalisedToken.tag = "DT";
+        }
+
+        // Pronouns
+        else if (spacyTag == "PRP" || spacyTag == "PRP$") {
+            normalisedToken.tag = "PRP";
+        }
+
+        // Nouns
+        else if (spacyTag == "NN"  ||
+                 spacyTag == "NNS" ||
+                 spacyTag == "NNP" ||
+                 spacyTag == "NNPS") {
+            normalisedToken.tag = "NN";
+        }
+
+        // Adjectives
+        else if (spacyTag == "JJ"  ||
+                 spacyTag == "JJR" ||
+                 spacyTag == "JJS") {
+            normalisedToken.tag = "J";
+        }
+
+        // Verbs
+        else if (spacyTag == "VB"  ||
+                 spacyTag == "VBD" ||
+                 spacyTag == "VBZ") {
+            normalisedToken.tag = "VB";
+        }
+
+        else if (spacyTag == "VBP") {
+            normalisedToken.tag = "VBP";
+        }
+
+        else if (spacyTag == "VBG") {
+            normalisedToken.tag = "VBG";
+        }
+
+        else if (spacyTag == "VBN") {
+            normalisedToken.tag = "VBN";
+        }
+
+        // Modals
+        else if (spacyTag == "MD") {
+            normalisedToken.tag = "MD";
+        }
+
+        // Adverbs
+        else if (spacyTag == "RB"  ||
+                 spacyTag == "RBR" ||
+                 spacyTag == "RBS") {
+            normalisedToken.tag = "RB";
+        }
+
+        // Wh-adverbs
+        else if (spacyTag == "WRB") {
+            normalisedToken.tag = "WRB";
+        }
+
+        // Wh-pronouns
+        else if (spacyTag == "WP" ||
+                 spacyTag == "WP$") {
+            normalisedToken.tag = "WP";
+        }
+
+        // Numbers
+        else if (spacyTag == "CD") {
+            normalisedToken.tag = "CD";
+        }
+
+        // Conjunctions
+        else if (spacyTag == "CC") {
+            normalisedToken.tag = "CC";
+        }
+
+        // Prepositions / subordinating conjunctions
+        else if (spacyTag == "IN") {
+            normalisedToken.tag = "IN";
+        }
+
+        // Unknown / unsupported
+        else {
+            normalisedToken.tag = "OTHER";
+        }
+
+        normalisedTokens.push_back(normalisedToken);
+    }
+
+    return normalisedTokens;
+}
+
+
+
+
+
+
+
+
+
+
+
