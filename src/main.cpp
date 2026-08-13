@@ -1,4 +1,5 @@
 #include <iostream>
+#include <bits/stdc++.h>
 #include <string>
 #include <vector>
 
@@ -11,6 +12,9 @@ extern "C" {
 
 // for setting env variables related to wordnet
 #include <cstdlib>
+
+// globals
+
 
 int main()
 {
@@ -146,3 +150,28 @@ int main()
 }
 
 //Glad to see things are going well and business is starting to pick up. Andrea told me about your outstanding numbers on Tuesday. Keep up the good work. Now to other business, I am going to suggest a payment schedule for the outstanding monies that is due. One, can you pay the balance of the license agreement as soon as possible? Two, I suggest we setup or you suggest, what you can pay on the back royalties, would you feel comfortable with paying every two weeks? Every month, I will like to catch up and maintain current royalties. So, if we can start the current royalties and maintain them every two weeks as all stores are required to do, I would appreciate it. Let me know if this works for you.
+
+/*
+    NOW I HAVE THE ABILITY TO GENERATE WORDS FROM A SPEECH/AUDIOFILE AND I ALSO HAVE THE ABILITY TO RECOGNIZE WORDS AND THEIR TYPES AND STUFF
+
+    NEXT STEPS: 
+        1. PRE-PROCESSING OF SENTENCES (CONVERT SENTENCES TO THEIR REQUIRED FORM/GRAMMATICAL STRUCTURE OF ASL)
+        2. USE WORDNET TO IDENTIFY THE WORDS AND CONVERT THEM TO THEIR BASE FORMS/FORM OF WORD FOR WHICH ANIMATION EXISTS
+        3. FIND AND IMPLEMENT A 3D ANIMATION LIBRARY WHICH HAS ALL THE WORDS (ALL THE WORDS OF THE DICTIONARY -- TF (FIND SOLUTION))
+*/
+
+// isEliminator
+bool isEliminator(const std::string& word) {
+    static const std::unordered_set<std::string> eliminators = {
+        "a", "an", "the",
+        "be", "are",
+        "and", "but", "so", "or", "yet"
+    };
+
+    return eliminators.count(word) > 0;
+};
+
+void preProcess(std::string& sentence) {
+    // i hv a sentence
+
+}

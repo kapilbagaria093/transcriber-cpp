@@ -128,3 +128,5 @@ third_party/WordNet-*.tar.gz
 .env
 .env.*
 !.env.example
+
+.venv
