@@ -69,6 +69,24 @@ struct Token
     bool isPunctuation;
 };
 
+enum class PhraseRole
+{
+    SUBJECT,
+    OBJECT,
+    INDIRECT_OBJECT,
+    COMPLEMENT,
+    OTHER
+};
+
+struct Phrase
+{
+    PhraseRole role;
+
+    int headIndex;
+
+    std::vector<int> tokenIndices;
+};
+
 // declarations
 int sentencePreProcessing(const std::string &sentence);
 std::vector<Token> posTag(const std::string &sentence);
@@ -198,7 +216,7 @@ int main()
     whisper_free(ctx);
 
     // testing sentence preprocessing -- at this point, we have speech broken down into sentences
-    std::string testSentence = "this is a sentence.";
+    std::string testSentence = "The young boy eats an apple.";
     sentencePreProcessing(testSentence);
 
     return EXIT_SUCCESS;
@@ -311,6 +329,171 @@ std::vector<Token> posTag(const std::string &sentence)
     return tokens;
 }
 
+// build dependency tree
+int findRoot(const std::vector<Token> &tokens)
+{
+    for (const auto &token : tokens)
+    {
+        if (token.dependency == "ROOT")
+            return token.index;
+    }
+
+    return -1;
+};
+
+// unordered map stores children of each index. (like a graph represented by list)
+std::unordered_map<int, std::vector<int>>
+buildDependencyTree(const std::vector<Token> &tokens)
+{
+    std::unordered_map<int, std::vector<int>> children;
+
+    for (const auto &token : tokens)
+    {
+        // Root points to itself in spaCy
+        if (token.index == token.headIndex)
+            continue;
+
+        children[token.headIndex].push_back(token.index);
+    }
+
+    return children;
+};
+
+void printDependencyTree(
+    const std::vector<Token> &tokens,
+    const std::unordered_map<int, std::vector<int>> &children,
+    int tokenIndex,
+    int depth = 0)
+{
+    const Token &token = tokens[tokenIndex];
+
+    for (int i = 0; i < depth; ++i)
+    {
+        std::cout << "    ";
+    }
+
+    std::cout
+        << token.word
+        << " ["
+        << token.dependency
+        << "]"
+        << "\n";
+
+    auto it = children.find(tokenIndex);
+
+    if (it == children.end())
+        return;
+
+    for (int childIndex : it->second)
+    {
+        printDependencyTree(
+            tokens,
+            children,
+            childIndex,
+            depth + 1);
+    }
+};
+
+PhraseRole getPhraseRole(const Token& token)
+{
+    // SUBJECT
+    if (token.dependency == "nsubj" ||
+        token.dependency == "nsubjpass")
+    {
+        return PhraseRole::SUBJECT;
+    }
+
+    // OBJECT
+    if (token.dependency == "obj" ||
+        token.dependency == "dobj")
+    {
+        return PhraseRole::OBJECT;
+    }
+
+    // INDIRECT OBJECT
+    if (token.dependency == "iobj")
+    {
+        return PhraseRole::INDIRECT_OBJECT;
+    }
+
+    // COMPLEMENT
+    if (token.dependency == "attr" ||
+        token.dependency == "acomp" ||
+        token.dependency == "xcomp" ||
+        token.dependency == "ccomp")
+    {
+        return PhraseRole::COMPLEMENT;
+    }
+
+    return PhraseRole::OTHER;
+}
+
+std::vector<int> getSubtree(
+    const std::unordered_map<int, std::vector<int>> &children,
+    int rootIndex)
+{
+    std::vector<int> result;
+
+    result.push_back(rootIndex);
+
+    auto it = children.find(rootIndex);
+
+    if (it == children.end())
+        return result;
+
+    for (int childIndex : it->second)
+    {
+        std::vector<int> childSubtree =
+            getSubtree(children, childIndex);
+
+        result.insert(
+            result.end(),
+            childSubtree.begin(),
+            childSubtree.end());
+    }
+
+    return result;
+}
+
+std::vector<Phrase> extractPhrases(
+    const std::vector<Token> &tokens,
+    const std::unordered_map<int, std::vector<int>> &children,
+    int rootIndex)
+{
+    std::vector<Phrase> phrases;
+
+    auto it = children.find(rootIndex);
+
+    if (it == children.end())
+        return phrases;
+
+    for (int childIndex : it->second)
+    {
+        const Token &child = tokens[childIndex];
+
+        PhraseRole role = getPhraseRole(child);
+
+        if (role == PhraseRole::OTHER)
+            continue;
+
+        Phrase phrase;
+
+        phrase.role = role;
+        phrase.headIndex = childIndex;
+
+        phrase.tokenIndices =
+            getSubtree(children, childIndex);
+
+        std::sort(
+            phrase.tokenIndices.begin(),
+            phrase.tokenIndices.end());
+
+        phrases.push_back(phrase);
+    }
+
+    return phrases;
+}
+
 // SENTENCE-WISE PREPROCESSING
 int sentencePreProcessing(const std::string &sentence)
 {
@@ -337,7 +520,65 @@ int sentencePreProcessing(const std::string &sentence)
 
     // std::cout << "----------------------------------------\n";
 
+    int root = findRoot(tokensVector);
 
+    if (root != -1)
+    {
+        auto children = buildDependencyTree(tokensVector);
+        std::cout << "----------------------------------------\n";
+        printDependencyTree(
+            tokensVector,
+            children,
+            root);
+
+        std::cout << "----------------------------------------\n";
+
+        auto subtree = getSubtree(children, root);
+
+        auto phrases = extractPhrases(tokensVector, children, root);
+
+        // printing phrases
+        for (const auto &phrase : phrases)
+        {
+            std::cout << "\nPhrase: ";
+
+            switch (phrase.role)
+            {
+            case PhraseRole::SUBJECT:
+                std::cout << "SUBJECT";
+                break;
+
+            case PhraseRole::OBJECT:
+                std::cout << "OBJECT";
+                break;
+
+            case PhraseRole::INDIRECT_OBJECT:
+                std::cout << "INDIRECT OBJECT";
+                break;
+
+            case PhraseRole::COMPLEMENT:
+                std::cout << "COMPLEMENT";
+                break;
+
+            default:
+                std::cout << "OTHER";
+            }
+
+            std::cout << "\nHead: "
+                      << tokensVector[phrase.headIndex].word
+                      << "\nWords: ";
+
+            for (int index : phrase.tokenIndices)
+            {
+                std::cout << tokensVector[index].word << " ";
+            }
+
+            std::cout << "\n";
+        }
+    }
+
+    // give me the subtree of tokooen which has index 1 (root word)
+    // subtree shows
 
     return EXIT_SUCCESS;
 };
